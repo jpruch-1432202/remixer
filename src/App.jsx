@@ -4,11 +4,39 @@ import './App.css'
 function App() {
   const [inputText, setInputText] = useState('')
   const [remixedText, setRemixedText] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleRemix = async () => {
-    // For now, we'll just reverse the text as a placeholder
-    // Later we'll integrate with the Claude API
-    setRemixedText(inputText.split('').reverse().join(''))
+    if (!inputText.trim()) {
+      setError('Please enter some text to remix')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/remix', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: inputText }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to remix text')
+      }
+
+      const data = await response.json()
+      setRemixedText(data.remixedText)
+    } catch (err) {
+      setError('Failed to remix text. Please try again.')
+      console.error('Error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -27,14 +55,26 @@ function App() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Paste your text here..."
+              disabled={isLoading}
             />
           </div>
 
+          {error && (
+            <div className="text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+
           <button
             onClick={handleRemix}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+            disabled={isLoading}
+            className={`w-full py-2 px-4 rounded-lg transition-colors ${
+              isLoading 
+                ? 'bg-blue-300 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            } text-white`}
           >
-            Remix Text
+            {isLoading ? 'Remixing...' : 'Remix Text'}
           </button>
 
           <div>
