@@ -8,6 +8,9 @@ function App() {
   const [error, setError] = useState(null)
   const [savedTweets, setSavedTweets] = useState([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editedTweet, setEditedTweet] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleRemix = async () => {
     if (!inputText.trim()) {
@@ -59,11 +62,30 @@ function App() {
     const { error } = await supabase
       .from('saved_tweets')
       .insert([{ text: tweet.trim() }])
+    if (!error) {
+      fetchSavedTweets();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    }
+  }
+
+  // Delete a tweet from Supabase
+  const handleDeleteTweet = async (id) => {
+    const { error } = await supabase
+      .from('saved_tweets')
+      .delete()
+      .eq('id', id)
     if (!error) fetchSavedTweets()
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-8 flex">
+      {/* Success banner */}
+      {saveSuccess && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50 transition-all">
+          Tweet saved!
+        </div>
+      )}
       <div className="max-w-3xl mx-auto flex-1">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Content Remixer</h1>
@@ -125,20 +147,41 @@ function App() {
                     key={index}
                     className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2"
                   >
-                    <p className="text-gray-800 whitespace-pre-wrap">{tweet.trim()}</p>
+                    {editingIndex === index ? (
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={editedTweet}
+                        onChange={e => setEditedTweet(e.target.value)}
+                      />
+                    ) : (
+                      <p className="text-gray-800 whitespace-pre-wrap">{tweet.trim()}</p>
+                    )}
                     <div className="flex gap-2 justify-end">
                       <button
                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                         onClick={() => {
-                          const tweetText = encodeURIComponent(tweet.trim());
+                          const tweetText = encodeURIComponent((editingIndex === index ? editedTweet : tweet).trim());
                           window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
                         }}
                       >
                         Tweet
                       </button>
                       <button
+                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+                        onClick={() => {
+                          if (editingIndex === index) {
+                            setEditingIndex(null);
+                          } else {
+                            setEditingIndex(index);
+                            setEditedTweet(tweet.trim());
+                          }
+                        }}
+                      >
+                        {editingIndex === index ? 'Done' : 'Edit'}
+                      </button>
+                      <button
                         className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                        onClick={() => handleSaveTweet(tweet)}
+                        onClick={() => handleSaveTweet(editingIndex === index ? editedTweet : tweet)}
                       >
                         Save
                       </button>
@@ -168,8 +211,25 @@ function App() {
             <div className="text-gray-500 italic">No saved tweets yet.</div>
           ) : (
             savedTweets.map(tweet => (
-              <div key={tweet.id} className="bg-gray-50 p-3 rounded border">
+              <div key={tweet.id} className="bg-gray-50 p-3 rounded border flex flex-col gap-2">
                 <p className="text-gray-800 whitespace-pre-wrap">{tweet.text}</p>
+                <div className="flex gap-2 justify-end">
+                  <button
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm"
+                    onClick={() => {
+                      const tweetText = encodeURIComponent(tweet.text.trim());
+                      window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+                    }}
+                  >
+                    Tweet
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                    onClick={() => handleDeleteTweet(tweet.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
                 <div className="text-xs text-gray-400 mt-1">{new Date(tweet.created_at).toLocaleString()}</div>
               </div>
             ))
@@ -178,13 +238,15 @@ function App() {
       </div>
 
       {/* Button to open sidebar */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="fixed top-1/2 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow-lg hover:bg-green-700 transition"
-        style={{ transform: 'translateY(-50%)' }}
-      >
-        Saved Tweets
-      </button>
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-1/2 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow-lg hover:bg-green-700 transition"
+          style={{ transform: 'translateY(-50%)' }}
+        >
+          Saved Tweets
+        </button>
+      )}
     </div>
   )
 }
