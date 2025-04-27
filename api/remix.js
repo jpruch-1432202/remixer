@@ -33,13 +33,12 @@ Remember, tweets cannot be longer than 280 characters.
 
 Please create at least 7 different tweets but no more than 10. 
 
-
 Important formatting rules:
-- Start each tweet with its number followed by a period
 - Put each tweet on its own line
-- Leave a blank line between each tweet
+- Separate each tweet with exactly this text: "---TWEET_SEPARATOR---"
 - Do not use any hashtags or emojis
-- Do not add any additional text or explanations
+- ***IMPORTANT: Output ONLY the tweets, with NO introduction, summary, or explanation. Do NOT say how many tweets you are providing.***
+
 
 Here is the blog post:`;
 
@@ -63,6 +62,7 @@ export default async function tweetsFromPost(req, res) {
   try {
     console.log('Making request to Claude API with text:', text.substring(0, 100) + '...');
     console.log('API Key exists:', !!apiKey);
+    console.log('Full prompt being sent:', `${tweetsFromPostPrompt} "${text}"`);
     
     const completion = await anthropic.messages.create({
       model: 'claude-3-opus-20240229',

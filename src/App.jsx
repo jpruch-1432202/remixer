@@ -94,12 +94,31 @@ function App() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Remixed Output
             </label>
-            <div className={`w-full p-4 rounded-lg min-h-[150px] border border-gray-200
-                          ${remixedText ? 'bg-white' : 'bg-gray-50'} whitespace-pre-wrap`}>
-              {remixedText || (
-                <span className="text-gray-500 italic">
-                  Your remixed text will appear here...
-                </span>
+            <div className="space-y-4">
+              {remixedText ? (
+                remixedText.split('---TWEET_SEPARATOR---').map((tweet, index) => (
+                  <div 
+                    key={index}
+                    className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2"
+                  >
+                    <p className="text-gray-800 whitespace-pre-wrap">{tweet.trim()}</p>
+                    <button
+                      className="self-end mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                      onClick={() => {
+                        const tweetText = encodeURIComponent(tweet.trim());
+                        window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+                      }}
+                    >
+                      Tweet
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <span className="text-gray-500 italic">
+                    Your remixed text will appear here...
+                  </span>
+                </div>
               )}
             </div>
           </div>
