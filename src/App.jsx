@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from './supabaseClient'
 
 function App() {
   const [inputText, setInputText] = useState('')
   const [remixedText, setRemixedText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [savedTweets, setSavedTweets] = useState([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleRemix = async () => {
     if (!inputText.trim()) {
@@ -38,9 +41,30 @@ function App() {
     }
   }
 
+  // Fetch saved tweets from Supabase
+  const fetchSavedTweets = async () => {
+    const { data, error } = await supabase
+      .from('saved_tweets')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (!error) setSavedTweets(data)
+  }
+
+  useEffect(() => {
+    fetchSavedTweets()
+  }, [])
+
+  // Save a tweet to Supabase
+  const handleSaveTweet = async (tweet) => {
+    const { error } = await supabase
+      .from('saved_tweets')
+      .insert([{ text: tweet.trim() }])
+    if (!error) fetchSavedTweets()
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-8 flex">
+      <div className="max-w-3xl mx-auto flex-1">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Content Remixer</h1>
           <p className="text-gray-600">Transform your text into something creative and engaging</p>
@@ -102,15 +126,23 @@ function App() {
                     className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2"
                   >
                     <p className="text-gray-800 whitespace-pre-wrap">{tweet.trim()}</p>
-                    <button
-                      className="self-end mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                      onClick={() => {
-                        const tweetText = encodeURIComponent(tweet.trim());
-                        window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
-                      }}
-                    >
-                      Tweet
-                    </button>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                        onClick={() => {
+                          const tweetText = encodeURIComponent(tweet.trim());
+                          window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+                        }}
+                      >
+                        Tweet
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                        onClick={() => handleSaveTweet(tweet)}
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -124,6 +156,35 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Sidebar for saved tweets */}
+      <div className={`fixed top-0 right-0 h-full w-80 bg-white shadow-lg border-l border-gray-200 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 z-50`}>
+        <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-lg font-bold">Saved Tweets</h2>
+          <button onClick={() => setSidebarOpen(false)} className="text-gray-500 hover:text-gray-800">&times;</button>
+        </div>
+        <div className="overflow-y-auto h-[calc(100%-56px)] p-4 space-y-4">
+          {savedTweets.length === 0 ? (
+            <div className="text-gray-500 italic">No saved tweets yet.</div>
+          ) : (
+            savedTweets.map(tweet => (
+              <div key={tweet.id} className="bg-gray-50 p-3 rounded border">
+                <p className="text-gray-800 whitespace-pre-wrap">{tweet.text}</p>
+                <div className="text-xs text-gray-400 mt-1">{new Date(tweet.created_at).toLocaleString()}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Button to open sidebar */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="fixed top-1/2 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow-lg hover:bg-green-700 transition"
+        style={{ transform: 'translateY(-50%)' }}
+      >
+        Saved Tweets
+      </button>
     </div>
   )
 }
