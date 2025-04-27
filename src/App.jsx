@@ -11,6 +11,7 @@ function App() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedTweet, setEditedTweet] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [remixedTweets, setRemixedTweets] = useState([]);
 
   const handleRemix = async () => {
     if (!inputText.trim()) {
@@ -56,6 +57,14 @@ function App() {
   useEffect(() => {
     fetchSavedTweets()
   }, [])
+
+  useEffect(() => {
+    if (remixedText) {
+      setRemixedTweets(remixedText.split('---TWEET_SEPARATOR---').map(t => t.trim()));
+    } else {
+      setRemixedTweets([]);
+    }
+  }, [remixedText]);
 
   // Save a tweet to Supabase
   const handleSaveTweet = async (tweet) => {
@@ -141,8 +150,8 @@ function App() {
               Remixed Output
             </label>
             <div className="space-y-4">
-              {remixedText ? (
-                remixedText.split('---TWEET_SEPARATOR---').map((tweet, index) => (
+              {remixedTweets.length > 0 ? (
+                remixedTweets.map((tweet, index) => (
                   <div 
                     key={index}
                     className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2"
@@ -154,36 +163,67 @@ function App() {
                         onChange={e => setEditedTweet(e.target.value)}
                       />
                     ) : (
-                      <p className="text-gray-800 whitespace-pre-wrap">{tweet.trim()}</p>
+                      <p className="text-gray-800 whitespace-pre-wrap">{tweet}</p>
                     )}
                     <div className="flex gap-2 justify-end">
+                      {/* Tweet button: blue bird on white background */}
                       <button
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                        className="p-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition text-sm relative group flex items-center justify-center"
                         onClick={() => {
                           const tweetText = encodeURIComponent((editingIndex === index ? editedTweet : tweet).trim());
                           window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
                         }}
                       >
-                        Tweet
+                        {/* Minimal Twitter bird SVG */}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                          <path d="M22.46 5.924c-.793.352-1.646.59-2.542.698a4.48 4.48 0 0 0 1.963-2.475 8.94 8.94 0 0 1-2.828 1.082A4.48 4.48 0 0 0 16.11 4c-2.485 0-4.5 2.014-4.5 4.5 0 .353.04.697.116 1.027C7.728 9.37 4.1 7.575 1.67 4.95a4.48 4.48 0 0 0-.61 2.263c0 1.563.796 2.942 2.008 3.75a4.48 4.48 0 0 1-2.037-.563v.057c0 2.183 1.553 4.004 3.617 4.42a4.52 4.52 0 0 1-2.03.077c.573 1.788 2.24 3.09 4.215 3.124A9.01 9.01 0 0 1 2 19.54a12.73 12.73 0 0 0 6.88 2.017c8.26 0 12.78-6.84 12.78-12.78 0-.195-.004-.39-.013-.583A9.14 9.14 0 0 0 24 4.59a8.98 8.98 0 0 1-2.54.697z" />
+                        </svg>
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Tweet</span>
                       </button>
-                      <button
-                        className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-                        onClick={() => {
-                          if (editingIndex === index) {
+                      {/* Edit/Done button: pencil or green checkmark */}
+                      {editingIndex === index ? (
+                        <button
+                          className="p-2 bg-white text-green-600 rounded hover:bg-green-50 transition text-sm relative group flex items-center justify-center"
+                          onClick={() => {
+                            // Update the remixedTweets array with the edited tweet
+                            const updatedTweets = [...remixedTweets];
+                            updatedTweets[index] = editedTweet;
+                            setRemixedTweets(updatedTweets);
                             setEditingIndex(null);
-                          } else {
+                          }}
+                        >
+                          {/* Green checkmark in a circle for Done */}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5" fill="none" />
+                            <path d="M8 12.5l2.5 2.5 5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                          </svg>
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Done</span>
+                        </button>
+                      ) : (
+                        <button
+                          className="p-2 bg-white text-gray-500 rounded hover:bg-gray-100 transition text-sm relative group flex items-center justify-center"
+                          onClick={() => {
                             setEditingIndex(index);
-                            setEditedTweet(tweet.trim());
-                          }
-                        }}
-                      >
-                        {editingIndex === index ? 'Done' : 'Edit'}
-                      </button>
+                            setEditedTweet(tweet);
+                          }}
+                        >
+                          {/* Minimal pencil SVG */}
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 5.487a2.25 2.25 0 1 1 3.182 3.182L7.5 21H3v-4.5l13.862-13.013z" />
+                          </svg>
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Edit</span>
+                        </button>
+                      )}
+                      {/* Save button: green checkmark, no circle */}
                       <button
-                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                        className="p-2 bg-white text-green-600 rounded hover:bg-green-50 transition text-sm relative group flex items-center justify-center"
                         onClick={() => handleSaveTweet(editingIndex === index ? editedTweet : tweet)}
                       >
-                        Save
+                        {/* Minimal green checkmark SVG */}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Save</span>
                       </button>
                     </div>
                   </div>
@@ -214,20 +254,30 @@ function App() {
               <div key={tweet.id} className="bg-gray-50 p-3 rounded border flex flex-col gap-2">
                 <p className="text-gray-800 whitespace-pre-wrap">{tweet.text}</p>
                 <div className="flex gap-2 justify-end">
+                  {/* Tweet button: blue bird on white background */}
                   <button
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm"
+                    className="p-2 bg-white text-blue-500 rounded hover:bg-blue-50 transition text-sm relative group flex items-center justify-center"
                     onClick={() => {
                       const tweetText = encodeURIComponent(tweet.text.trim());
                       window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
                     }}
                   >
-                    Tweet
+                    {/* Minimal Twitter bird SVG */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                      <path d="M22.46 5.924c-.793.352-1.646.59-2.542.698a4.48 4.48 0 0 0 1.963-2.475 8.94 8.94 0 0 1-2.828 1.082A4.48 4.48 0 0 0 16.11 4c-2.485 0-4.5 2.014-4.5 4.5 0 .353.04.697.116 1.027C7.728 9.37 4.1 7.575 1.67 4.95a4.48 4.48 0 0 0-.61 2.263c0 1.563.796 2.942 2.008 3.75a4.48 4.48 0 0 1-2.037-.563v.057c0 2.183 1.553 4.004 3.617 4.42a4.52 4.52 0 0 1-2.03.077c.573 1.788 2.24 3.09 4.215 3.124A9.01 9.01 0 0 1 2 19.54a12.73 12.73 0 0 0 6.88 2.017c8.26 0 12.78-6.84 12.78-12.78 0-.195-.004-.39-.013-.583A9.14 9.14 0 0 0 24 4.59a8.98 8.98 0 0 1-2.54.697z" />
+                    </svg>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Tweet</span>
                   </button>
+                  {/* Delete button: minimal red X, no circle */}
                   <button
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                    className="p-2 bg-white text-red-500 rounded hover:bg-red-50 transition text-sm relative group flex items-center justify-center"
                     onClick={() => handleDeleteTweet(tweet.id)}
                   >
-                    Delete
+                    {/* Minimal red X SVG */}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 text-xs text-white bg-black rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">Delete</span>
                   </button>
                 </div>
                 <div className="text-xs text-gray-400 mt-1">{new Date(tweet.created_at).toLocaleString()}</div>
