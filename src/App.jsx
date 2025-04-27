@@ -95,7 +95,7 @@ function App() {
               Remixed Output
             </label>
             <div className={`w-full p-4 rounded-lg min-h-[150px] border border-gray-200
-                          ${remixedText ? 'bg-white' : 'bg-gray-50'}`}>
+                          ${remixedText ? 'bg-white' : 'bg-gray-50'} whitespace-pre-wrap`}>
               {remixedText || (
                 <span className="text-gray-500 italic">
                   Your remixed text will appear here...

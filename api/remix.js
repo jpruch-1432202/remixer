@@ -23,7 +23,27 @@ const anthropic = new Anthropic({
   apiKey: apiKey,
 });
 
-export default async function handler(req, res) {
+const tweetsFromPostPrompt = `You are a social media expert and ghostwriter. 
+
+You work for a popular blogger, and your job is to take their blog post and come up with a variety of tweets to share ideas from the post. 
+
+Since you are a ghostwriter, you need to make sure to match the style, tone, and voice of the blog post as closely as possible. 
+
+Remember, tweets cannot be longer than 280 characters. 
+
+Please create at least 7 different tweets but no more than 10. 
+
+
+Important formatting rules:
+- Start each tweet with its number followed by a period
+- Put each tweet on its own line
+- Leave a blank line between each tweet
+- Do not use any hashtags or emojis
+- Do not add any additional text or explanations
+
+Here is the blog post:`;
+
+export default async function tweetsFromPost(req, res) {
   console.log('Received remix request:', { 
     method: req.method,
     bodyExists: !!req.body,
@@ -41,17 +61,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Making request to Claude API...');
+    console.log('Making request to Claude API with text:', text.substring(0, 100) + '...');
+    console.log('API Key exists:', !!apiKey);
+    
     const completion = await anthropic.messages.create({
       model: 'claude-3-opus-20240229',
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `Please remix the following text in a creative and interesting way. Make it engaging while keeping the core message intact: "${text}"`
+        content: `${tweetsFromPostPrompt} "${text}"`
       }]
     });
 
-    console.log('Received response from Claude API:', completion);
+    console.log('Full Claude API response:', JSON.stringify(completion, null, 2));
     
     if (completion && completion.content && completion.content[0]) {
       return res.status(200).json({ 
