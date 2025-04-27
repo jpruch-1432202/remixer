@@ -3,24 +3,20 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Load environment variables
+dotenv.config();
 
-// Load environment variables from the root directory
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+const apiKey = process.env.ANTHROPIC_API_KEY;
 
 // Debug logging
 console.log('Environment variables loaded:', {
   apiKeyExists: !!apiKey,
   apiKeyLength: apiKey?.length,
-  apiKeyStart: apiKey?.substring(0, 7) + '...',
-  apiKeyValid: apiKey?.startsWith('sk-ant-')
+  apiKeyStart: apiKey?.substring(0, 10) + '...'
 });
 
-if (!apiKey || !apiKey.startsWith('sk-ant-')) {
-  throw new Error('Invalid or missing ANTHROPIC_API_KEY in environment variables');
+if (!apiKey) {
+  throw new Error('ANTHROPIC_API_KEY is not set in environment variables');
 }
 
 const anthropic = new Anthropic({
@@ -46,7 +42,7 @@ export default async function handler(req, res) {
 
   try {
     console.log('Making request to Claude API...');
-    const message = await anthropic.messages.create({
+    const completion = await anthropic.messages.create({
       model: 'claude-3-opus-20240229',
       max_tokens: 1024,
       messages: [{
@@ -55,14 +51,14 @@ export default async function handler(req, res) {
       }]
     });
 
-    console.log('Received response from Claude API:', message);
+    console.log('Received response from Claude API:', completion);
     
-    if (message && message.content && message.content[0]) {
+    if (completion && completion.content && completion.content[0]) {
       return res.status(200).json({ 
-        remixedText: message.content[0].text 
+        remixedText: completion.content[0].text 
       });
     } else {
-      console.error('Unexpected API response structure:', message);
+      console.error('Unexpected API response structure:', completion);
       return res.status(500).json({ 
         error: 'Unexpected API response structure',
         details: 'The API response did not contain the expected content'
